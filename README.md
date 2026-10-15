@@ -76,14 +76,16 @@ Dado que el contexto de decodificación en C++ de `llama.cpp` es secuencial por 
 
 ---
 
-## Dispositivo y Rendimiento Probado
+## Hardware y Rendimiento de Referencia
 
-- **Dispositivo de Prueba:** Xiaomi Redmi Note 8 Pro
-- **SoC:** MediaTek Helio G90T (2x Cortex-A76 @ 2.05 GHz + 6x Cortex-A55 @ 2.0 GHz)
-- **Memoria RAM:** 6 GB LPDDR4X
-- **Sistema Operativo:** Android 11 (MIUI 12.5)
-- **Tiempo de Inferencia:** ~**7.3 segundos** por pregunta completa (con 4 opciones y validación).
-- **Consumo de Memoria:** Estable por debajo de ~1.1 GB totales de proceso (cero cierres por Out-Of-Memory).
+Las pruebas de estrés, inferencia local y gestión de memoria se ejecutaron bajo un perfil de hardware representativo:
+
+- **Hardware de Referencia:** SoC ARM64 Octa-Core (MediaTek Helio G90T o equivalente / Snapdragon serie 700).
+- **Memoria RAM:** 6 GB LPDDR4X.
+- **Sistema Operativo:** Android 11+ (Probado en MIUI / Android Stock).
+- **Rendimiento:** ~7.3s por generación completa sin saturación de memoria.
+- **Consumo de Memoria:** Estable por debajo de ~1.1 GB totales de proceso (0 cierres por Out-Of-Memory).
+- **Paralelismo de Inferencia:** 4 hilos en CPU con cuantización `Q4_K_M` en llama.cpp.
 
 ---
 
@@ -128,8 +130,31 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## Permisos Requeridos en el Dispositivo
 
-1. **Servicio de Accesibilidad:** Configuración > Accesibilidad > Servicios descargados > Activar **AppSqueeze**.
-2. **Sobreponerse a otras apps (Draw over other apps):** Permitir mostrar la pantalla de cuestionario por encima de otras aplicaciones.
+Para garantizar que AppSqueeze pueda detectar aperturas de aplicaciones y desplegar la pantalla de evaluación de forma ininterrumpida, se requieren los siguientes permisos del sistema:
+
+1. **Permiso de Accesibilidad:** `Ajustes > Accesibilidad > Servicios descargados > Activar AppSqueeze`. Permite al servicio detectar ventanas activas (`typeWindowStateChanged`) e interceptar la navegación.
+2. **Permiso de Sobreposición (`SYSTEM_ALERT_WINDOW`):** Permite mostrar el cuestionario flotante sobre cualquier aplicación abierta.
+
+---
+
+### Configuración para Dispositivos con Capas Agresivas (Xiaomi / MIUI, Huawei, Samsung)
+
+Los fabricantes con capas de personalización que gestionan la memoria y batería de manera agresiva requieren ajustes adicionales para evitar que el sistema detenga el servicio o bloquee el lanzamiento de actividades en primer plano.
+
+#### NOTA ESPECIAL PARA DISPOSITIVOS XIAOMI / MIUI:
+En dispositivos Xiaomi, la capa MIUI restringe por defecto que los servicios en segundo plano muestren ventanas o pantallas completas. Por ello, es **OBLIGATORIO** ir a **Ajustes de la App > Otros permisos** y marcar con **check verde**:
+
+* **"Mostrar ventanas emergentes mientras se ejecuta en segundo plano":** Indispensable para que el `AccessibilityService` pueda desplegar el cuestionario al detectar una aplicación bloqueada.
+* **"Mostrar en pantalla de bloqueo":** Permite desplegar el cuestionario incluso si el dispositivo se encuentra bloqueado o recién encendido.
+* **"Mostrar ventanas emergentes":** Permitido.
+
+Adicionalmente, en la configuración de la aplicación:
+* Configurar **"Ahorro de batería"** en **"Sin restricciones"** (evita que el optimizador del sistema elimine el proceso de inferencia de 491 MB en segundo plano).
+* Configurar **"Inicio automático"** en **activado** (asegura la continuidad del servicio tras reiniciar el sistema).
+
+#### Dispositivos Huawei (EMUI) y Samsung (One UI):
+* **Huawei:** En *Ajustes > Batería > Inicio de aplicaciones*, buscar AppSqueeze y configurar en *Gestionar manualmente* (activando Inicio automático, Inicio secundario y Ejecutar en segundo plano).
+* **Samsung:** En *Ajustes > Cuidado del dispositivo > Batería > Límites de uso en segundo plano*, agregar AppSqueeze a *Aplicaciones que nunca se suspenden*.
 
 ---
 
