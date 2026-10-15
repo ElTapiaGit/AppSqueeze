@@ -1,0 +1,9 @@
+/build
+*.gguf
+*.litertlm
+*.bin
+*.task
+*.tflite
+*.keystore
+*.jks
+google-services.json
